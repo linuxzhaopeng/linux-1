@@ -1,0 +1,115 @@
+案例练习,准备:
+            rht-vmctl  reset  classroom
+            rht-vmctl  reset  server
+	       rht-vmctl  reset  desktop
+######################################################
+
+案例1：设置SELinux保护
+为虚拟机 server0、desktop0 配置SELinux 
+  1）确保 SELinux 处于宽松模式（permissive） 
+  2）在每次重新开机后，此设置必须仍然有效
+	vim /etc/selinux/confing
+	SELINUX=permissive
+	setenforce 0
+案例2:虚拟机 server0操作， /dev/vdb 上按以下要求建立分区：
+
+采用默认的 msdos 分区模式 
+– 第1个分区 /dev/vdb1 的大小为 3G
+– 第2个分区 /dev/vdb2 的大小为 1G
+– 第3个分区 /dev/vdb3 的大小为 1G
+– 第4个分区 /dev/vdb4为扩展分区
+– 在划分三个分区逻辑分区/dev/vdb[5-6]，
+– 分区大小依次为600M、800M
+[root@server0 ~]# lsblk 
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+vda    253:0    0   10G  0 disk 
+└─vda1 253:1    0   10G  0 part /
+vdb    253:16   0   10G  0 disk 
+├─vdb1 253:17   0    3G  0 part 
+├─vdb2 253:18   0    1G  0 part 
+├─vdb3 253:19   0    1G  0 part 
+├─vdb4 253:20   0    1K  0 part 
+├─vdb5 253:21   0  600M  0 part 
+└─vdb6 253:22   0  800M  0 part 
+
+
+案例3：Shell脚本(利用位置变量,实现用户输入参数)
+为系统 server0 书写脚本/root/user.sh
+运行脚本，可以判断用户输入的用户是否存在
+如果存在，输出用户基本信息（id  用户名）
+如果用户，不存在则创建用户，并输出用户创建成功
+[root@server0 ~]# cat user.sh 
+#!/bin/bash
+read -p '请输入你要测试的用户' i
+id $i &> /dev/null
+if [ $? -eq 0 ];then
+	echo '你输入的该用户存在'
+else
+	useradd $i
+	echo $i	'由于你输入的用户不存在,我们已经为你创建成功'
+fi
+	
+
+
+案例4：实现本机server0 的Web服务
+  1）利用httpd软件搭建Web服务，页面显示内容为 小蝌蚪找妈妈 
+	yum -y install httpd
+	systemctl start httpd
+	echo '小蝌蚪找妈妈' > /var/www/html/index.html
+	curl 172.25.0.11
+案例5：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，明确拒绝所有客户端访问(默认区域修改为block)
+	firewall-cmd --set-default-zone=block 
+	firewall-cmd --get-default-zone
+  2）在虚拟机 desktop0上测试能否访问server0 的Web服务
+	拒接访问
+  3）在虚拟机 desktop0上测试能否 ping通 虚拟机 server0
+	不可以访问
+
+案例6：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为public
+	firewall-cmd --set-default-zone=public
+	firewall-cmd --get-default-zone
+  2）在虚拟机 desktop0上测试能否访问server0 的Web服务
+	拒接访问
+  3）在虚拟机 desktop0上测试能否 ping通 虚拟机 server0
+	可以ping通
+案例7：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为public
+  2）修改虚拟机 server0防火墙配置，在public区域中添加http协议,实现永久配置
+	firewall-cmd --permanent --zone=public --add-service=http
+	firewall-cmd --reload
+	firewall-cmd --zone=public --list-all
+  3）在虚拟机 desktop0上测试能否访问server0 的Web服务
+	curl 172.25.0.11
+	小蝌蚪找妈妈
+
+案例8:在server上操作,验证端口转发策略
+– 从desktop0上访问server0的5423端口，与访问server0的80端口效果一样
+	firewall-cmd --zone=public --add-forward-port=port=5432:proto=tcp:toport=80
+success
+	 firewall-cmd --zone=public --list-all
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
